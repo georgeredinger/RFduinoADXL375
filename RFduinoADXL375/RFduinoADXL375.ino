@@ -45,13 +45,20 @@ byte buff[TO_READ] ;    //6 bytes buffer for saving data read from the device
 void setup() {
 //  RFduinoBLE.begin();
  
-Wire.begin();        // join i2c bus (address optional for master)
+  pinMode(2,INPUT);
+ 
+  Wire.begin();        // join i2c bus (address optional for master)
   Serial.begin(9600);  // start serial for output
   
   //Turning on the ADXL345
   writeTo(DEVICE, 0x2D, 0);      
   writeTo(DEVICE, 0x2D, 16);
   writeTo(DEVICE, 0x2D, 8);
+  RFduino_pinWake(2, HIGH); // configures pin  to wake up device on a high signal 
+  digitalWrite(2,LOW); 
+  RFduino_resetPinWake(2); // reset state of pin that caused wakeup 
+
+
 }
 
 void RFduinoBLE_onConnect() {
@@ -64,7 +71,19 @@ void loop() {
 
   int regAddress = 0x32;    //first axis-acceleration-data register on the ADXL345
   short x, y, z;
-  
+  RFduino_ULPDelay(INFINITE); // Stay in ultra low power mode until interrupt from the BLE or pinWake() 
+
+  if (RFduino_pinWoke(2)){
+    RFduino_resetPinWake(2); // reset state of pin that caused wakeup 
+  }
+
+   Wire.begin();        // join i2c bus (address optional for master)
+
+  delay(10);
+  writeTo(DEVICE, 0x2D, 0);      
+  writeTo(DEVICE, 0x2D, 16);
+  writeTo(DEVICE, 0x2D, 8);
+  delay(10);
   readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
   
    //each axis reading comes in 10 bit resolution, ie 2 bytes.  Least Significat Byte first!!
@@ -79,7 +98,6 @@ void loop() {
   Serial.write(10);
   
   //It appears that delay is needed in order not to clog the port
-  delay(500);
 //  
 //  if (flag)
 //  {
