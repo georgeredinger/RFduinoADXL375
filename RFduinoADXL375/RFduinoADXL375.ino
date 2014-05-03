@@ -76,14 +76,16 @@ void loop() {
   if (RFduino_pinWoke(2)){
     RFduino_resetPinWake(2); // reset state of pin that caused wakeup 
   }
+   
+//   Wire.speed = 100;
+ //  Wire.begin();        // join i2c bus (address optional for master)
 
-   Wire.begin();        // join i2c bus (address optional for master)
+//  delay(10);
+//  writeTo(DEVICE, 0x2D, 0);      
+//  writeTo(DEVICE, 0x2D, 16);
+//  writeTo(DEVICE, 0x2D, 8);
+//  delay(10);
 
-  delay(10);
-  writeTo(DEVICE, 0x2D, 0);      
-  writeTo(DEVICE, 0x2D, 16);
-  writeTo(DEVICE, 0x2D, 8);
-  delay(10);
   readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
   
    //each axis reading comes in 10 bit resolution, ie 2 bytes.  Least Significat Byte first!!
