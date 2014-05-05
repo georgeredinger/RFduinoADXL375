@@ -57,7 +57,7 @@ void setup() {
   RFduino_pinWake(2, HIGH); // configures pin  to wake up device on a high signal 
   digitalWrite(2,LOW); 
   RFduino_resetPinWake(2); // reset state of pin that caused wakeup 
-
+  Serial.println("begin");
 
 }
 
@@ -77,28 +77,22 @@ void loop() {
     RFduino_resetPinWake(2); // reset state of pin that caused wakeup 
   }
    
-//   Wire.speed = 100;
- //  Wire.begin();        // join i2c bus (address optional for master)
-
-//  delay(10);
-//  writeTo(DEVICE, 0x2D, 0);      
-//  writeTo(DEVICE, 0x2D, 16);
-//  writeTo(DEVICE, 0x2D, 8);
-//  delay(10);
+  
 
   readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
   
    //each axis reading comes in 10 bit resolution, ie 2 bytes.  Least Significat Byte first!!
    //thus we are converting both bytes in to one int
   x = ((buff[1]) << 8) | buff[0];   
-  y = ((buff[3])<< 8) | buff[2];
+  y = ((buff[3]) << 8) | buff[2];
   z = ((buff[5]) << 8) | buff[4];
   
   //we send the x y z values as a string to the serial port
   sprintf(str, "%d %d %d", x, y, z);  
   Serial.print(str);
   Serial.write(10);
-  
+
+
   //It appears that delay is needed in order not to clog the port
 //  
 //  if (flag)
