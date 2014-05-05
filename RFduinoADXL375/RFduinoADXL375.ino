@@ -45,7 +45,7 @@ byte buff[TO_READ] ;    //6 bytes buffer for saving data read from the device
 void setup() {
 //  RFduinoBLE.begin();
  
-  pinMode(2,INPUT);
+ pinMode(2,INPUT);
  
   Wire.begin();        // join i2c bus (address optional for master)
   Serial.begin(9600);  // start serial for output
@@ -69,7 +69,7 @@ void RFduinoBLE_onConnect() {
 }
 void loop() {
 
-  int regAddress = 0x32;    //first axis-acceleration-data register on the ADXL345
+  int regAddress = 0x32;    //first axis-acceleration-data register on the ADXL375
   short x, y, z;
   RFduino_ULPDelay(INFINITE); // Stay in ultra low power mode until interrupt from the BLE or pinWake() 
 
@@ -91,7 +91,6 @@ void loop() {
   sprintf(str, "%d %d %d", x, y, z);  
   Serial.print(str);
   Serial.write(10);
-
 
   //It appears that delay is needed in order not to clog the port
 //  
