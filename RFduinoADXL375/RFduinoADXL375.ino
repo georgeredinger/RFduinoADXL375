@@ -7,7 +7,7 @@ This sketch sends 20 20 byte packets to
 */
 
 #include "ADXL375.h"
-
+#include "Pins.h"
 #include <Wire.h>
 
 #include <RFduinoBLE.h>
@@ -21,6 +21,7 @@ int ch;
 int packet;
 
 int start;
+volatile boolean led;
 
 char POWER_CTL = 0x2D;    //Power Control Register
 char DATA_FORMAT = 0x31;
@@ -44,9 +45,9 @@ byte buff[TO_READ] ;    //6 bytes buffer for saving data read from the device
 
 void setup() {
 //  RFduinoBLE.begin();
- 
  pinMode(2,INPUT);
- 
+ pinMode(RED,OUTPUT);
+ pinMode(GREEN,OUTPUT);
   Wire.begin();        // join i2c bus (address optional for master)
   Serial.begin(9600);  // start serial for output
   
@@ -54,10 +55,21 @@ void setup() {
   writeTo(DEVICE, 0x2D, 0);      
   writeTo(DEVICE, 0x2D, 16);
   writeTo(DEVICE, 0x2D, 8);
+  delay(500);
+
+  printXYZ();
+
+  delay(1000);
   RFduino_pinWake(2, HIGH); // configures pin  to wake up device on a high signal 
   digitalWrite(2,LOW); 
   RFduino_resetPinWake(2); // reset state of pin that caused wakeup 
-  Serial.println("begin");
+  setupFIFO();
+  readFrom(DEVICE,0X30,1,buff);
+  
+
+  Serial.print("begin ");
+  Serial.println(getID(),HEX);
+  led=GREEN;
 
 }
 
@@ -71,26 +83,36 @@ void loop() {
 
   int regAddress = 0x32;    //first axis-acceleration-data register on the ADXL375
   short x, y, z;
-  RFduino_ULPDelay(INFINITE); // Stay in ultra low power mode until interrupt from the BLE or pinWake() 
+  RFduino_ULPDelay(2000); // Stay in ultra low power mode until interrupt from the BLE or pinWake() 
 
   if (RFduino_pinWoke(2)){
     RFduino_resetPinWake(2); // reset state of pin that caused wakeup 
-  }
-   
-  
+     Serial.println("----------------");
+    dumpFIFO();
+    led=RED;
+  }else{
+    digitalWrite(led,HIGH);
+    RFduino_ULPDelay(5);
+    digitalWrite(led,LOW);
 
-  readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
+    //blink leds, etc
+  }
   
-   //each axis reading comes in 10 bit resolution, ie 2 bytes.  Least Significat Byte first!!
-   //thus we are converting both bytes in to one int
-  x = ((buff[1]) << 8) | buff[0];   
-  y = ((buff[3]) << 8) | buff[2];
-  z = ((buff[5]) << 8) | buff[4];
+   
+ 
   
-  //we send the x y z values as a string to the serial port
-  sprintf(str, "%d %d %d", x, y, z);  
-  Serial.print(str);
-  Serial.write(10);
+//  readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
+//  
+//   //each axis reading comes in 10 bit resolution, ie 2 bytes.  Least Significat Byte first!!
+//   //thus we are converting both bytes in to one int
+//  x = ((buff[1]) << 8) | buff[0];   
+//  y = ((buff[3]) << 8) | buff[2];
+//  z = ((buff[5]) << 8) | buff[4];
+//  
+//  //we send the x y z values as a string to the serial port
+//  sprintf(str, "%d %d %d", x, y, z);  
+//  Serial.print(str);
+//  Serial.write(10);
 
   //It appears that delay is needed in order not to clog the port
 //  

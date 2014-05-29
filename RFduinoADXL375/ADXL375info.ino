@@ -17,3 +17,12 @@ void setsamplerate(){
 }
 
 
+void printXYZ(){
+  short x,y,z;
+  readXYZ(&x,&y,&z);
+  Serial.print(x);
+  Serial.print(",");
+  Serial.print(y);
+  Serial.print(",");
+  Serial.println(z);
+}
