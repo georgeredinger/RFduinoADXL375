@@ -45,16 +45,19 @@
 //trigger threshold register settings
 //THRESH_SHOCK register 
 //The scale factor is 780 mg/LSB. A
-#define FIFTYG ((10*1000)/780)
-
+// The Shock Threshold scale factor is 780 mg/LSB.
+// It's an 8 bit register
+// so 255 should corespond to the FSR or 200 
+// 200 G FSR / 255 max register value = .784, pretty close to 780 milli G per LSB.
+// 50 Gs is 1/4 of the FSR of 255 so a 50 G threshold should be 64 (255/4)
+#define FIFTYG (128) 
+#define TENG (13)
 void setThreshold(short threshold){
-  //writeTo(DEVICE,0x1D,(threshold*1000)/780); // 64/255 of fsr or 50 Gs since FSR == 200 Gs
-    writeTo(DEVICE,0x1D,32); // 64/255 of fsr or 50 Gs since FSR == 200 Gs
+    writeTo(DEVICE,0x1D,TENG);
 
 }
-//  writeTo(DEVICE,0x1D,FIFTYG); // 64/255 of fsr or 50 Gs since FSR == 200 Gs
-#define GSCALE_DIVISOR (1000/49)
 
+//
 void setTriggerPosition(short pre){
  //+_____________________________________________+
 //|D7  D6    |   D5    |      D4  D3  D2  D1  D0 |
@@ -128,7 +131,9 @@ switch(rate) {
 // 0000  0.10 0
 } 
   Serial.println(rcode);
-  writeTo(DEVICE,ADXL375_BW_RATE_REG,B8(10000) | rcode); 
+ // writeTo(DEVICE,ADXL375_BW_RATE_REG,B8(10000) | rcode); 
+    writeTo(DEVICE,ADXL375_BW_RATE_REG,rcode); 
+
 }
 
 //  writeTo(DEVICE,ADXL375_BW_RATE_REG,0X0E); //1600 HZ
@@ -141,7 +146,7 @@ void setupFIFO(){
 
   //1. Write 0x28 to Register 0x1D; set shock threshold to 31.2 g.
   // writeTo(DEVICE,0x1D,0x28); // 2,5 Gs for an ADXL345,(OX28/0xFF)*FSR
-  setThreshold(50);
+  setThreshold(10);
   //2. Write 0x0F to Register 0x21; set shock duration to 10 ms.
   //  625 uS/LSB.
   //  10ms, 10/0.625 = 
@@ -156,8 +161,10 @@ void setupFIFO(){
   writeTo(DEVICE,0x2A,0x07);
   
   //6. Write 0x0F to Register 0x2C to set output data rate to
-  setRate(1600);
-  setTriggerPosition(16);
+//  setRate(3200);
+  writeTo(DEVICE,0x2c,0x0F); // set rate to 3200 hz
+
+  setTriggerPosition(32);
 
   //6. Write 0x01Dto Register 0x2C to set output data rate to
   //  800 Hz power save mode
@@ -179,11 +186,15 @@ void setupFIFO(){
 
 
   //10. Write 0x08 to Register 0x2D to start the measurement.
-  //  It is recommended that the POWER_CTL register be
+  //  It is recommended that the POWER_CTL register 
   //  configured last.
+  
+  writeTo(DEVICE,0x2c,0x0F); // set rate to 3200 hz again
 
   writeTo(DEVICE,0x2D,0x08);
 }
+
+
 
 int maxFIFO() {
   short x, y, z;
@@ -206,7 +217,15 @@ int maxFIFO() {
 
  }
  
- void dumpFIFO(){
+ 
+ 
+ 
+ 
+ 
+ //dumpFIFO()
+
+
+void dumpFIFO(){
    int i=0;
      short x, y, z;
 
@@ -216,8 +235,9 @@ int maxFIFO() {
       x = (((short)buff[1]) << 8) | buff[0];   
       y = (((short)buff[3])<< 8) | buff[2];
       z = (((short)buff[5]) << 8) | buff[4];
-      //sprintf(str, "%d %d %d", x/GSCALE_DIVISOR, y/GSCALE_DIVISOR, z/GSCALE_DIVISOR);  
-      sprintf(str, "%+03d,%+03d,%+03d", x, y, z);  
+      scaleXYZ(&x,&y,&z);
+
+      sprintf(str, "%+03d,%+03d,%+03d ",x, y, z);  
 
       Serial.print(str);
       Serial.write(10);

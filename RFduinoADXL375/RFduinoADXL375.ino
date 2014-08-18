@@ -49,7 +49,7 @@ void setup() {
  pinMode(RED,OUTPUT);
  pinMode(GREEN,OUTPUT);
   Wire.begin();        // join i2c bus (address optional for master)
-  Serial.begin(9600);  // start serial for output
+  Serial.begin(115200);  // start serial for output
   
   //Turning on the ADXL345
   writeTo(DEVICE, 0x2D, 0);      
@@ -79,26 +79,39 @@ void RFduinoBLE_onConnect() {
   start = 0;
   flag = true;
 }
+
+int triggers=0;
+
 void loop() {
 
-  int regAddress = 0x32;    //first axis-acceleration-data register on the ADXL375
   short x, y, z;
   RFduino_ULPDelay(2000); // Stay in ultra low power mode until interrupt from the BLE or pinWake() 
 
   if (RFduino_pinWoke(2)){
     RFduino_resetPinWake(2); // reset state of pin that caused wakeup 
-     Serial.println("----------------");
+     Serial.print(triggers++);
+     Serial.print(" ");
+     Serial.print(getSampleRate());
+     Serial.println(" **----------------");
     dumpFIFO();
     led=RED;
   }else{
     digitalWrite(led,HIGH);
-    RFduino_ULPDelay(5);
+    RFduino_ULPDelay(0x1D);
     digitalWrite(led,LOW);
+//    
+//    printXYZ();    
+
+//  RFduino_ULPDelay(500);
+//  digitalWrite(RED,HIGH);
+//  RFduino_ULPDelay(0x1D);
+//  digitalWrite(RED,LOW);
+
 
     //blink leds, etc
   }
   
-   
+delay(10);   
  
   
 //  readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
