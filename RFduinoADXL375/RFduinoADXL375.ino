@@ -9,9 +9,14 @@ This sketch sends 20 20 byte packets to
 #include "ADXL375.h"
 #include "Pins.h"
 #include <Wire.h>
+#include "i2c.h"
+#include "ADXL375info.h"
+#include "FiFo.h"
+
 
 #include <RFduinoBLE.h>
 
+ADXL375 shock;
 int packets = 20;
 
 // flag used to start sending
@@ -21,7 +26,7 @@ int ch;
 int packet;
 
 int start;
-volatile boolean led;
+volatile int led;
 
 char POWER_CTL = 0x2D;    //Power Control Register
 char DATA_FORMAT = 0x31;
@@ -48,8 +53,11 @@ void setup() {
  pinMode(2,INPUT);
  pinMode(RED,OUTPUT);
  pinMode(GREEN,OUTPUT);
-  Wire.begin();        // join i2c bus (address optional for master)
+  Wire.begin();
+shock.initialize();
+// join i2c bus (address optional for master)
   Serial.begin(115200);  // start serial for output
+  
   
   //Turning on the ADXL345
   writeTo(DEVICE, 0x2D, 0);      
@@ -63,12 +71,17 @@ void setup() {
   RFduino_pinWake(2, HIGH); // configures pin  to wake up device on a high signal 
   digitalWrite(2,LOW); 
   RFduino_resetPinWake(2); // reset state of pin that caused wakeup 
-  setupFIFO();
-  readFrom(DEVICE,0X30,1,buff);
   
+  if(shock.testConnection()) {
+    Serial.println("ADXL375 good");
+    shock.setupFIFO();
+    shock.dumpSetup();
 
-  Serial.print("begin ");
-  Serial.println(getID(),HEX);
+  }else{
+    Serial.println("ADXL375 bad");
+    //set an error flag and blink funny (TODO:)
+  }
+
   led=GREEN;
 
 }
@@ -81,51 +94,33 @@ void RFduinoBLE_onConnect() {
 }
 
 int triggers=0;
-
+bool shocked = false;
 void loop() {
 
   short x, y, z;
   RFduino_ULPDelay(2000); // Stay in ultra low power mode until interrupt from the BLE or pinWake() 
-
+  
   if (RFduino_pinWoke(2)){
     RFduino_resetPinWake(2); // reset state of pin that caused wakeup 
-     Serial.print(triggers++);
-     Serial.print(" ");
-     Serial.print(getSampleRate());
-     Serial.println(" **----------------");
-    dumpFIFO();
+     Serial.println(triggers++);
+     shocked=true;
+    shock.saveFIFO();
     led=RED;
   }else{
+
     digitalWrite(led,HIGH);
-    RFduino_ULPDelay(0x1D);
+    RFduino_ULPDelay(50);
     digitalWrite(led,LOW);
-//    
-//    printXYZ();    
-
-//  RFduino_ULPDelay(500);
-//  digitalWrite(RED,HIGH);
-//  RFduino_ULPDelay(0x1D);
-//  digitalWrite(RED,LOW);
-
-
-    //blink leds, etc
+    if(shocked) {
+      shocked = false;
+      shock.printFIFO();
+    }
   }
   
 delay(10);   
  
   
-//  readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
-//  
-//   //each axis reading comes in 10 bit resolution, ie 2 bytes.  Least Significat Byte first!!
-//   //thus we are converting both bytes in to one int
-//  x = ((buff[1]) << 8) | buff[0];   
-//  y = ((buff[3]) << 8) | buff[2];
-//  z = ((buff[5]) << 8) | buff[4];
-//  
-//  //we send the x y z values as a string to the serial port
-//  sprintf(str, "%d %d %d", x, y, z);  
-//  Serial.print(str);
-//  Serial.write(10);
+
 
   //It appears that delay is needed in order not to clog the port
 //  

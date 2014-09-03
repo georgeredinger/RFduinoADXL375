@@ -1,2 +1,0 @@
-RFDUINO and ADXL375 
-
